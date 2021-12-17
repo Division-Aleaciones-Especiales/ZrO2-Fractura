@@ -61,6 +61,9 @@ def get_adsite(atoms, site = None, face='top'):
 
 def make_adstruc(theatoms, name, theface='top', thesite='top', d=2):
     from ase.io.vasp import write_vasp
+    if theface == 'bottom':
+        d = -d 
+
     ad_pos = [theatoms.info['adatom'][theface][thesite]+[0,0,d]]
     adatom_inface_insite = Atoms('H', positions=ad_pos, pbc=True, cell=theatoms.cell.copy())
     adstruc = theatoms.copy()
@@ -71,35 +74,51 @@ def make_adstruc(theatoms, name, theface='top', thesite='top', d=2):
 def get_slab_height(theatoms):
     return theatoms.positions[:,2].max() - theatoms.positions[:,2].min()
 
+def get_scaled_site(thesite, thecell):
+    return np.array( [ad / np.linalg.norm(v) for ad, v in zip(thesite, thecell.array)] )
+
 def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None):
 
     atoms1 = in_atoms1.copy()
     atoms2 = in_atoms2.copy()
 
-    if cell is None:
-        cell = atoms1.cell.copy() + mix*(atoms2.cell.copy() - atoms1.cell.copy())
+
     height1 = get_slab_height(in_atoms1)
     height2 = get_slab_height(in_atoms2)
+    if cell is None:
+        cell = atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
+    
 
-    atoms1.set_cell(np.array([ atoms1.cell[0].copy(), atoms1.cell[1].copy(), cell[2] ]))
-    atoms2.set_cell(np.array([ atoms2.cell[0].copy(), atoms2.cell[1].copy(), cell[2] ]))
+    # pass everything to cell 2 height
+    atoms1.set_cell(np.array([ atoms1.cell[0].copy(), atoms1.cell[1].copy(), cell[2].copy() ]))
+    atoms2.set_cell(np.array([ atoms2.cell[0].copy(), atoms2.cell[1].copy(), cell[2].copy() ]))
+
+    atoms1.center()
+    atoms2.center()
+
+    correction1 = ( atoms1.positions - in_atoms1.positions ).mean(axis=0)
+    correction2 = ( atoms2.positions - in_atoms2.positions ).mean(axis=0)
+
+    adsite1 = atoms1.info['adatom']['top'][adsite1] - correction1
+    adsite2 = atoms2.info['adatom']['bottom'][adsite2] - correction2
+
+    pdb.set_trace()
+    scaled_adsite1 = get_scaled_site(adsite1, cell.copy())
+    scaled_adsite2 = get_scaled_site(adsite2, cell.copy())
 
     _ = [theatoms.set_cell([[1,0,0],[0,1,0],[0,0,1]], scale_atoms=True) for theatoms in [atoms1, atoms2]]
 
+    atoms2.translate(scaled_adsite1-scaled_adsite2+[0,0, (distance)/cell[2][2]])
+    atoms1.extend(atoms2)
 
     t1 = atoms1.positions.min(axis=0)
     atoms1.translate(-t1)
     
-    t2 = atoms2.positions.min(axis=0)
-    atoms2.translate(-t2+[0,0,( height1+distance)/cell[2][2]])
-
-    atoms1.extend(atoms2)
-
     atoms1.set_cell(cell, scale_atoms = True)
     atoms1.pbc = True
 
-    return atoms1, atoms2
+    return atoms1
 
 
 
