@@ -11,7 +11,10 @@ def check_has_adatom(theatoms):
     if hasattr(theatoms, 'info'):
         if isinstance(theatoms.info, dict):
             if 'adatom' in theatoms.info.keys():
-                print(theatoms.info['adatom'])
+    #            print(theatoms.info['adatom'])
+                pass
+            else:
+                theatoms.info.update({'adatom':{}})
     else:
         raise ValueError('no info property')
 
@@ -25,7 +28,7 @@ def get_bridge_position(theatoms, thelayer):
 
 
 def get_top_positions(atoms, top_layer):
-    return atoms.positions[top_layer]
+    return atoms.positions[top_layer[0]]
 
 
 def get_adsite(atoms, site = None, face='top'):
@@ -54,6 +57,53 @@ def get_adsite(atoms, site = None, face='top'):
         info['adatom'][face].update({'top': get_top_positions(atoms, layer)})
 
     return info['adatom']
+
+
+def make_adstruc(theatoms, name, theface='top', thesite='top', d=2):
+    from ase.io.vasp import write_vasp
+    ad_pos = [theatoms.info['adatom'][theface][thesite]+[0,0,d]]
+    adatom_inface_insite = Atoms('H', positions=ad_pos, pbc=True, cell=theatoms.cell.copy())
+    adstruc = theatoms.copy()
+    adstruc.extend(adatom_inface_insite)
+    write_vasp(f'{name}_{theface}face_ad{thesite}.vasp', adstruc,direct=True, sort=True, vasp5=True, wrap=True)
+    return adstruc
+
+def get_slab_height(theatoms):
+    return theatoms.positions[:,2].max() - theatoms.positions[:,2].min()
+
+def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None):
+
+    atoms1 = in_atoms1.copy()
+    atoms2 = in_atoms2.copy()
+
+    atoms1.set_cell(atoms1.cell / np.linalg.norm(atoms1.cell), scale_atoms = True )
+    atoms2.set_cell(atoms2.cell / np.linalg.norm(atoms2.cell), scale_atoms = True ) 
+
+    if cell is None:
+        cell = atoms1.cell.copy() + mix*(atoms2.cell.copy() - atoms1.cell.copy())
+
+    t1 = atoms1.positions.min(axis=0)
+    atoms1.translate(-t1)
+    
+    height1 = get_slab_height(in_atoms1)
+    height2 = get_slab_height(in_atoms2)
+
+    print(height1)
+
+    cell[2] = np.array([0,0,height1+height2])
+
+    t2 = atoms2.positions.min(axis=0)
+    atoms2.translate(-t2+[0,0,height1])
+
+    return atoms1, atoms2
+
+    atoms1.extend(atoms2)
+
+    atoms1.set_cell(cell, scale_atoms = True)
+    atoms1.pbc = True
+
+    return atoms1, atoms2
+
 
 
 
