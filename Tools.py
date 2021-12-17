@@ -76,26 +76,23 @@ def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None
     atoms1 = in_atoms1.copy()
     atoms2 = in_atoms2.copy()
 
-    atoms1.set_cell(atoms1.cell / np.linalg.norm(atoms1.cell), scale_atoms = True )
-    atoms2.set_cell(atoms2.cell / np.linalg.norm(atoms2.cell), scale_atoms = True ) 
-
     if cell is None:
         cell = atoms1.cell.copy() + mix*(atoms2.cell.copy() - atoms1.cell.copy())
+    height1 = get_slab_height(in_atoms1)
+    height2 = get_slab_height(in_atoms2)
+    cell[2] = np.array([0,0,height1+height2+2*distance])
+
+    atoms1.set_cell(np.array([ atoms1.cell[0].copy(), atoms1.cell[1].copy(), cell[2] ]))
+    atoms2.set_cell(np.array([ atoms2.cell[0].copy(), atoms2.cell[1].copy(), cell[2] ]))
+
+    _ = [theatoms.set_cell([[1,0,0],[0,1,0],[0,0,1]], scale_atoms=True) for theatoms in [atoms1, atoms2]]
+
 
     t1 = atoms1.positions.min(axis=0)
     atoms1.translate(-t1)
     
-    height1 = get_slab_height(in_atoms1)
-    height2 = get_slab_height(in_atoms2)
-
-    print(height1)
-
-    cell[2] = np.array([0,0,height1+height2])
-
     t2 = atoms2.positions.min(axis=0)
-    atoms2.translate(-t2+[0,0,height1])
-
-    return atoms1, atoms2
+    atoms2.translate(-t2+[0,0,( height1+distance)/cell[2][2]])
 
     atoms1.extend(atoms2)
 
