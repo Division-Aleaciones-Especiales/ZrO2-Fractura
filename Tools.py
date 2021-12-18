@@ -77,48 +77,60 @@ def get_slab_height(theatoms):
 def get_scaled_site(thesite, thecell):
     return np.array( [ad / np.linalg.norm(v) for ad, v in zip(thesite, thecell.array)] )
 
+def remove_bottom_atom(theatoms):
+    atoms = theatoms.copy()
+    layers, hs = get_layers(atoms,(0,0,1))
+    atoms_in_bottom = atom_index_in_bottom(layers)
+    atoms.pop(atoms_in_bottom[-1])
+    return atoms
+
 def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None):
 
-    atoms1 = in_atoms1.copy()
-    atoms2 = in_atoms2.copy()
-
+    d = np.array([0,0,distance])
 
     height1 = get_slab_height(in_atoms1)
     height2 = get_slab_height(in_atoms2)
     if cell is None:
-        cell = atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
+        cell = in_atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
-    
 
-    # pass everything to cell 2 height
-    atoms1.set_cell(np.array([ atoms1.cell[0].copy(), atoms1.cell[1].copy(), cell[2].copy() ]))
-    atoms2.set_cell(np.array([ atoms2.cell[0].copy(), atoms2.cell[1].copy(), cell[2].copy() ]))
-
+    atoms1 = in_atoms1.copy()
     atoms1.center()
-    atoms2.center()
+    correction = (atoms1.get_positions() - in_atoms1.get_positions()).mean(axis=0)
 
-    correction1 = ( atoms1.positions - in_atoms1.positions ).mean(axis=0)
-    correction2 = ( atoms2.positions - in_atoms2.positions ).mean(axis=0)
+    atoms2 = in_atoms2.copy()
+    atoms2.cell[2] = cell[2].copy()
+    atoms2.set_cell(np.eye(3), scale_atoms = True)
+    atoms2.set_cell(cell.copy(), scale_atoms = True)
 
-    adsite1 = atoms1.info['adatom']['top'][adsite1] - correction1
-    adsite2 = atoms2.info['adatom']['bottom'][adsite2] - correction2
+    try:
+        adsite1 = atoms1.info['adatom']['top']['top']
+        atoms1.info['adatom']['top']['top']+=correction
+        atoms1.info['adatom']['top']['hollow']+=correction
+    except KeyError:
+        print('in_atoms1 do not have adatom . falling back to max heght')
+        adsite1 = atoms1.get_positions().max(axis=0)
+    try:
+        adsite2 = atoms2.info['adatom']['bottom']['top']
+    except KeyError:
+        print('in_atoms2 do not have adatom . falling back to min height')
+        adsite2 = atoms1.get_positions().min(axis=0)
+    translation = adsite1 - adsite2 + d
 
-    pdb.set_trace()
-    scaled_adsite1 = get_scaled_site(adsite1, cell.copy())
-    scaled_adsite2 = get_scaled_site(adsite2, cell.copy())
+    atoms2.translate(translation)
 
-    _ = [theatoms.set_cell([[1,0,0],[0,1,0],[0,0,1]], scale_atoms=True) for theatoms in [atoms1, atoms2]]
+    thestack = atoms1.copy()
+    thestack.cell /= np.linalg.norm(thestack.cell)
 
-    atoms2.translate(scaled_adsite1-scaled_adsite2+[0,0, (distance)/cell[2][2]])
-    atoms1.extend(atoms2)
+    thestack.extend(atoms2)
 
-    t1 = atoms1.positions.min(axis=0)
-    atoms1.translate(-t1)
-    
-    atoms1.set_cell(cell, scale_atoms = True)
-    atoms1.pbc = True
+    newcell = in_atoms1.cell.copy()
 
-    return atoms1
+    newcell[2]=[0,0,height1+height2+2*distance]
+
+    thestack.set_cell(newcell)
+
+    return thestack
 
 
 
