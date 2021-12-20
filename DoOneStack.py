@@ -1,6 +1,5 @@
 import pdb
-import os
-import sys
+import os, sys, subprocess
 try:
     sys.path.insert(0,'/data/git/ase/')
 except FileNotFoundError as E:
@@ -33,24 +32,25 @@ zrhcp = bulk('Zr',crystalstructure='hcp',a=zrhcpa, c = zrhcpc,orthorhombic=False
 zrhcp.write('OrthoZrHCP.vasp', direct=True, wrap=True, sort=True)
 multiplicities = { '1x1': [[1,0,0],[0,1,0],[0,0,1]], '2x2':[[2,0,0],[0,2,0],[0,0,1]] }
 
-metalindex='0001'
-metalmulti ='2x2'
-metalname = f'Zr{metalindex}_{metalmulti}'
-metalfilename = f'{metalname}.vasp'
+metalindex={'0001': ( 0,0,1 ), '11m20':( 1,0,0 )}
+metalmulti ='1x1'
 metalsite = 'top'
+thisindex='11m20'
+metalname = f'Zr{thisindex}_{metalmulti}'
+metalfilename = f'{metalname}.vasp'
 
 def poscarname(adistance, anoxidesite, anoxidename): 
     return f'{anoxidename}_{anoxidesite}_2x2_{metalname}_{metalsite}_2x2_{adistance}.vasp'
 
-Zr = {metalindex: { '1x1': surfaces_with_termination(orthozrhcp, (0,0,1), 6, vacuum=10, termination='Zr')[0] }}
-Zr[metalindex]['1x1'] = remove_bottom_atom(Zr[metalindex]['1x1'])
-Zr[metalindex]['1x1'] = remove_bottom_atom(Zr[metalindex]['1x1'])
-Zr[metalindex][metalmulti] = make_supercell(Zr[metalindex]['1x1'], multiplicities[metalmulti],)
-Zr[metalindex][metalmulti].write(metalfilename,sort=True,wrap=True, direct=True,vasp5=True)
-adsites = get_adsite(Zr[metalindex][ '2x2' ],site='top',face='bottom')
+Zr = {thisindex: { '1x1': surfaces_with_termination(orthozrhcp, metalindex[thisindex], 6, vacuum=10, termination='Zr')[0] }}
+Zr[thisindex]['1x1'] = remove_bottom_atom(Zr[thisindex]['1x1'])
+Zr[thisindex]['1x1'] = remove_bottom_atom(Zr[thisindex]['1x1'])
+Zr[thisindex][metalmulti] = make_supercell(Zr[thisindex]['1x1'], multiplicities[metalmulti],)
+Zr[thisindex][metalmulti].write(metalfilename,sort=True,wrap=True, direct=True,vasp5=True)
+adsites = get_adsite(Zr[thisindex][metalmulti],site='top',face='bottom')
 
 oxideterm = {'Oterm': 'O', 'Zrterm': 'Zr'}
-oxidesites = ['top', 'hollow', 'bridge']
+oxidesites = ['hollow'] # ['top', 'hollow', 'bridge']
 thisoxideterm = 'Zrterm'
 
 thisoxidename ='ZrO20001'+thisoxideterm
@@ -81,7 +81,7 @@ for thisoxidesite in oxidesites:
     writetheoxides = [this.write(f'ZrO2{thisoxideterm}_2x2_{i}.vasp',sort=True, direct=True, format='vasp') for i,this in enumerate(ZrO2001[thisoxideterm]['2x2'])]
 
     thestacks = [
-            stack(oxidesurf, Zr[metalindex][metalmulti], thisoxidesite ,'top',d, cell = oxidesurf.cell.copy())   
+            stack(oxidesurf, Zr[thisindex][metalmulti], thisoxidesite ,'top',d, cell = oxidesurf.cell.copy())   
             for oxidesurf in  [ ZrO2001[thisoxideterm]['2x2'][0] ]
             for d in distances
             ]

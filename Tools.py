@@ -92,7 +92,7 @@ def remove_bottom_atom(theatoms):
     atoms.pop(atoms_in_bottom[-1])
     return atoms
 
-def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None):
+def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None, return_parts=False):
 
     d = np.array([0,0,distance])
 
@@ -137,7 +137,10 @@ def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None
 
     thestack.set_cell(newcell)
 
-    return thestack
+    if return_parts:
+        return thestack, atoms1, atoms2
+    else:
+        return thestack
 
 
 
