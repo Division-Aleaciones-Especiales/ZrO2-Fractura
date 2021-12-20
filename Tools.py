@@ -104,14 +104,13 @@ def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None
     atoms2.set_cell(cell.copy(), scale_atoms = True)
 
     try:
-        adsite1 = atoms1.info['adatom']['top']['top']
-        atoms1.info['adatom']['top']['top']+=correction
-        atoms1.info['adatom']['top']['hollow']+=correction
+        atoms1.info['adatom']['top'][adsite1]+=correction
+        adsite1 = atoms1.info['adatom']['top'][adsite1]
     except KeyError:
         print('in_atoms1 do not have adatom . falling back to max heght')
         adsite1 = atoms1.get_positions().max(axis=0)
     try:
-        adsite2 = atoms2.info['adatom']['bottom']['top']
+        adsite2 = atoms2.info['adatom']['bottom'][adsite2]
     except KeyError:
         print('in_atoms2 do not have adatom . falling back to min height')
         adsite2 = atoms1.get_positions().min(axis=0)
