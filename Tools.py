@@ -19,17 +19,22 @@ def check_has_adatom(theatoms):
         raise ValueError('no info property')
 
 
-def get_bridge_position(theatoms, thelayer):
-    positions = theatoms.positions[thelayer]
-    theys = np.unique(positions[:, 1])
-    equaly = [positions[positions[:, 1] == they].mean(axis=0) for they in theys]
-    print(equaly)
-    return positions[equaly] 
+#def get_bridge_position(theatoms, thelayer):
+#    positions = theatoms.positions[thelayer]
+#    theys = np.unique(positions[:, 1])
+#    equaly = [positions[positions[:, 1] == they].mean(axis=0) for they in theys]
+#    print(equaly)
+#    return positions[equaly] 
 
 
 def get_top_positions(atoms, top_layer):
     return atoms.positions[top_layer[0]]
 
+def get_bridge_position(atoms, top_layer):
+    assert(len(top_layer)>=2)
+    top_layer = np.array(top_layer).astype(int)
+    first_x = atoms.positions[top_layer,0].argsort()
+    return  atoms.positions[top_layer[first_x[:2]], :].mean(axis=0)
 
 def get_adsite(atoms, site = None, face='top'):
     """ 
@@ -52,9 +57,12 @@ def get_adsite(atoms, site = None, face='top'):
         info['adatom'][face].update({'hollow': atoms.positions[layer].mean(axis=0)})
     elif site == 'top':
         info['adatom'][face].update({'top': get_top_positions(atoms, layer)})
+    elif site == 'bridge':
+        info['adatom'][face].update({'bridge':get_bridge_position(atoms, layer)})
     elif site == None:
         info['adatom'][face].update( {'hollow': atoms.positions[layer].mean(axis=0)})
         info['adatom'][face].update({'top': get_top_positions(atoms, layer)})
+        info['adatom'][face].update({'bridge':get_bridge_position(atoms, layer)})
 
     return info['adatom']
 
