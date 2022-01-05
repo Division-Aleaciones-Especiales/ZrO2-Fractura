@@ -26,36 +26,38 @@ zrhcpa = 3.2313 # Zr.cell[0][0]
 zrhcpc = 5.1479 # Zr.cell[-1][-1]
 zro2 = read_vasp('Structure/POSCAR')
 
+vaspopts={'format':'vasp','sort':True,'wrap':True, 'direct':True,'vasp5':True}
+
 orthozrhcp = bulk('Zr',crystalstructure='hcp',a=zrhcpa, c = zrhcpc,orthorhombic=True)
 orthozrhcp.write('OrthoZrHCP.vasp', direct=True, wrap=True, sort=True)
 zrhcp = bulk('Zr',crystalstructure='hcp',a=zrhcpa, c = zrhcpc,orthorhombic=False)
-zrhcp.write('OrthoZrHCP.vasp', direct=True, wrap=True, sort=True)
+zrhcp.write('OrthoZrHCP.vasp', **vaspopts)
 multiplicities = { '1x1': [[1,0,0],[0,1,0],[0,0,1]], '2x2':[[2,0,0],[0,2,0],[0,0,1]] }
 
-metalindex={'0001': ( 0,0,1 ), '11m20':( 1,0,0 )}
+metalindex={'0001': ( 0,0,1 ), '11m20':( 1,0,0 ), '1010': (0,1,0)}
 metalmulti ='1x1'
 metalsite = 'top'
-thisindex='11m20'
+thisindex='1010'
 metalname = f'Zr{thisindex}_{metalmulti}'
 metalfilename = f'{metalname}.vasp'
 
 def poscarname(adistance, anoxidesite, anoxidename): 
     return f'{anoxidename}_{anoxidesite}_2x2_{metalname}_{metalsite}_2x2_{adistance}.vasp'
 
-Zr = {thisindex: { '1x1': surfaces_with_termination(orthozrhcp, metalindex[thisindex], 6, vacuum=10, termination='Zr')[0] }}
+Zr = {thisindex: { '1x1': surfaces_with_termination(orthozrhcp, metalindex[thisindex], 6, vacuum=10, termination='Zr')[1] }}
 Zr[thisindex]['1x1'] = remove_bottom_atom(Zr[thisindex]['1x1'])
 Zr[thisindex]['1x1'] = remove_bottom_atom(Zr[thisindex]['1x1'])
 Zr[thisindex][metalmulti] = make_supercell(Zr[thisindex]['1x1'], multiplicities[metalmulti],)
-Zr[thisindex][metalmulti].write(metalfilename,sort=True,wrap=True, direct=True,vasp5=True)
+Zr[thisindex][metalmulti].write(metalfilename, **vaspopts)
 adsites = get_adsite(Zr[thisindex][metalmulti],site='top',face='bottom')
 
 oxideterm = {'Oterm': 'O', 'Zrterm': 'Zr'}
-oxidesites = ['hollow'] # ['top', 'hollow', 'bridge']
+oxidesites = ['top'] # ['top', 'hollow', 'bridge']
 thisoxideterm = 'Zrterm'
 
-thisoxidename ='ZrO20001'+thisoxideterm
+thisoxidename ='ZrO2001'+thisoxideterm
 
-distances = np.array([2.5, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
+distances = np.array([2.5]) #, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
 
 
 for thisoxidesite in oxidesites:
@@ -65,9 +67,11 @@ for thisoxidesite in oxidesites:
                     zro2, [0,0,1],layers=4, vacuum=15., termination=oxideterm[thisoxideterm],verbose=True, symmetric=True
                     ) } 
                 }
+    for i in range(3):
+        ZrO2001[thisoxideterm]['1x1'] = [ remove_bottom_atom( thisoxideslab ) for thisoxideslab in ZrO2001[thisoxideterm]['1x1'] ]
 
     write_1x1_oxide_surfaces = [
-            write_vasp(f'ZrO2001{thisoxideterm}_1x1_{i}.vasp', thisone, sort=True, direct=True) for i, thisone in enumerate(ZrO2001[thisoxideterm]['1x1'])
+            thisone.write(f'ZrO2001{thisoxideterm}_1x1_{i}.vasp', **vaspopts) for i, thisone in enumerate(ZrO2001[thisoxideterm]['1x1'])
             ]
 
     ZrO2001[thisoxideterm]['2x2'] = [
@@ -75,10 +79,10 @@ for thisoxidesite in oxidesites:
             for i, theoxidesurf in enumerate(ZrO2001[thisoxideterm]['1x1']) 
             ]
 
-    translate = [this.translate([this[0].x]) for this in ZrO2001[thisoxideterm]['2x2']]
-    center = [this.center() for this in ZrO2001[thisoxideterm]['2x2']]
+#    translate = [this.translate([this[0].x]) for this in ZrO2001[thisoxideterm]['2x2']]
+    center = [this.center(axis=2) for this in ZrO2001[thisoxideterm]['2x2']]
     findtheoxidesites  = [get_adsite(theintf,site=thisoxidesite, face='top') for theintf in ZrO2001[thisoxideterm]['2x2']]
-    writetheoxides = [this.write(f'ZrO2{thisoxideterm}_2x2_{i}.vasp',sort=True, direct=True, format='vasp') for i,this in enumerate(ZrO2001[thisoxideterm]['2x2'])]
+    writetheoxides = [this.write(f'ZrO2{thisoxideterm}_2x2_{i}.vasp', **vaspopts) for i,this in enumerate(ZrO2001[thisoxideterm]['2x2'])]
 
     thestacks = [
             stack(oxidesurf, Zr[thisindex][metalmulti], thisoxidesite ,'top',d, cell = oxidesurf.cell.copy())   
