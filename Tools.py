@@ -30,7 +30,7 @@ def check_has_adatom(theatoms):
 
 
 def get_top_positions(atoms, top_layer):
-    return atoms.positions[top_layer[0]]
+    return atoms.positions[top_layer[0]].copy()
 
 def get_bridge_position(atoms, top_layer):
     assert(len(top_layer)>=2)
@@ -94,19 +94,20 @@ def remove_bottom_atom(theatoms):
     atoms.pop(atoms_in_bottom[-1])
     return atoms
 
-def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None, return_parts=False):
+def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell = None, return_parts=False):
     d = np.array([0,0,distance])
 
     height1 = get_slab_height(in_atoms1)
     height2 = get_slab_height(in_atoms2)
+
     if cell is None:
         cell = in_atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
 
     atoms1 = sort(in_atoms1.copy())
+    atoms1 = in_atoms1.copy()
     atoms1.cell[2] = cell[2]
     atoms1.center(axis=2)
-    correction = (atoms1.get_positions() - in_atoms1.get_positions()).mean(axis=0)
 
     atoms2 = sort(in_atoms2.copy())
     atoms2.cell[2] = cell[2].copy()
@@ -115,27 +116,8 @@ def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None
     atoms2.set_cell(cell.copy(), scale_atoms = True)
     atoms2.write('rescaled_atoms2.xyz', format='xyz')
 
-    try:
-        atoms1.info['adatom']['top'][adsite1]+=correction
-        adsite1 = atoms1.info['adatom']['top'][adsite1]
-    except KeyError:
-        print('in_atoms1 do not have adatom . falling back to max heght')
-        adsite1 = atoms1.get_positions().max(axis=0)
-    try:
-        adsite2_orig = in_atoms2.info['adatom']['bottom'][adsite2]
-        scaled_adsite = np.array(
-                [adsite2_orig[0]/in_atoms2.cell.array[0,0],
-                adsite2_orig[1]/in_atoms2.cell.array[1,1],
-                adsite2_orig[2]/cell.array[2,2] ]) # TODO better
-        atoms2.info['adatom']['bottom'][adsite2] = np.multiply(scaled_adsite, cell.array.sum(axis=0))
-        adsite2 = atoms2.info['adatom']['bottom'][adsite2]
-    except KeyError:
-        print('in_atoms2 do not have adatom . falling back to min height')
-        adsite2 = atoms2.get_positions().min(axis=0)
-
-    print(adsite1)
-    print(adsite2)
-    print(d)
+    adsite1 = get_adsite(atoms1, site=tagadsite1, face='top')['top'][tagadsite1]
+    adsite2 = get_adsite(atoms2, site=tagadsite2, face='bottom')['bottom'][tagadsite2]
 
     translation = adsite1 - adsite2 + d
     print(translation)
@@ -144,24 +126,9 @@ def stack(in_atoms1, in_atoms2, adsite1, adsite2, distance, mix=0.5, cell = None
     atoms2.write('translated_rescaled_atoms2.xyz', format='xyz')
 
     thestack = atoms1.copy()
-    thestack.cell /= np.linalg.norm(thestack.cell)
-
     thestack.extend(atoms2)
-
-    newcell = in_atoms1.cell.copy()
-
-    newcell[2]=[0,0,height1+height2+2*distance]
-
-    thestack.set_cell(newcell)
 
     if return_parts:
         return thestack, atoms1, atoms2
     else:
         return thestack
-
-
-
-
-
-
-

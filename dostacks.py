@@ -21,7 +21,7 @@ plt.rc('figure', figsize=(25,10))
 import numpy as np
 from ase.build.surfaces_with_termination import (atom_index_in_bottom, atom_index_in_top)
 from Tools import get_adsite, stack, remove_bottom_atom
-
+from ase.visualize import view
 zrhcpa = 3.2313 # Zr.cell[0][0]
 zrhcpc = 5.1479 # Zr.cell[-1][-1]
 zro2 = read_vasp('Structure/POSCAR')
@@ -37,7 +37,7 @@ multiplicities = { '1x1': [[1,0,0],[0,1,0],[0,0,1]], '2x2':[[2,0,0],[0,2,0],[0,0
 metalindex={'0001': ( 0,0,1 ), '11m20':( 1,0,0 ), '1010': (0,1,0)}
 metalmulti ='1x1'
 metalsite = 'top'
-thisindex='1010'
+thisindex='11m20'
 metalname = f'Zr{thisindex}_{metalmulti}'
 metalfilename = f'{metalname}.vasp'
 
@@ -52,12 +52,12 @@ Zr[thisindex][metalmulti].write(metalfilename, **vaspopts)
 adsites = get_adsite(Zr[thisindex][metalmulti],site='top',face='bottom')
 
 oxideterm = {'Oterm': 'O', 'Zrterm': 'Zr'}
-oxidesites = ['top'] # ['top', 'hollow', 'bridge']
+oxidesites = ['top']#, 'hollow', 'bridge']
 thisoxideterm = 'Zrterm'
 
 thisoxidename ='ZrO2001'+thisoxideterm
 
-distances = np.array([2.5]) #, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
+distances = np.array([2.5, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
 
 
 for thisoxidesite in oxidesites:
@@ -76,17 +76,18 @@ for thisoxidesite in oxidesites:
 
     ZrO2001[thisoxideterm]['2x2'] = [
             make_supercell(theoxidesurf,multiplicities['2x2'],tol=1e-10, wrap=True) 
-            for i, theoxidesurf in enumerate(ZrO2001[thisoxideterm]['1x1']) 
+            #for i, theoxidesurf in enumerate(ZrO2001[thisoxideterm]['1x1']) 
+            for theoxidesurf in ZrO2001[thisoxideterm]['1x1']
             ]
 
-#    translate = [this.translate([this[0].x]) for this in ZrO2001[thisoxideterm]['2x2']]
     center = [this.center(axis=2) for this in ZrO2001[thisoxideterm]['2x2']]
     findtheoxidesites  = [get_adsite(theintf,site=thisoxidesite, face='top') for theintf in ZrO2001[thisoxideterm]['2x2']]
     writetheoxides = [this.write(f'ZrO2{thisoxideterm}_2x2_{i}.vasp', **vaspopts) for i,this in enumerate(ZrO2001[thisoxideterm]['2x2'])]
 
+    stackcell=ZrO2001[thisoxideterm]['2x2'][0].cell.copy()
+    thestacks = []
     thestacks = [
-            stack(oxidesurf, Zr[thisindex][metalmulti], thisoxidesite ,'top',d, cell = oxidesurf.cell.copy())   
-            for oxidesurf in  [ ZrO2001[thisoxideterm]['2x2'][0] ]
+            stack(ZrO2001[thisoxideterm]['2x2'][0].copy(), Zr[thisindex][metalmulti].copy(), thisoxidesite ,'top',d, cell = stackcell)   
             for d in distances
             ]
 
