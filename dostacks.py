@@ -59,7 +59,6 @@ thisoxidename ='ZrO2001'+thisoxideterm
 
 distances = np.array([2.5, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
 
-
 for thisoxidesite in oxidesites:
 
     ZrO2001 = {thisoxideterm: {
@@ -67,6 +66,7 @@ for thisoxidesite in oxidesites:
                     zro2, [0,0,1],layers=4, vacuum=15., termination=oxideterm[thisoxideterm],verbose=True, symmetric=True
                     ) } 
                 }
+    remove_bottom = make_symmetric
     for i in range(3):
         ZrO2001[thisoxideterm]['1x1'] = [ remove_bottom_atom( thisoxideslab ) for thisoxideslab in ZrO2001[thisoxideterm]['1x1'] ]
 

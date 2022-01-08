@@ -21,14 +21,6 @@ def check_has_adatom(theatoms):
         raise ValueError('no info property')
 
 
-#def get_bridge_position(theatoms, thelayer):
-#    positions = theatoms.positions[thelayer]
-#    theys = np.unique(positions[:, 1])
-#    equaly = [positions[positions[:, 1] == they].mean(axis=0) for they in theys]
-#    print(equaly)
-#    return positions[equaly] 
-
-
 def get_top_positions(atoms, top_layer):
     return atoms.positions[top_layer[0]].copy()
 
