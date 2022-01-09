@@ -60,6 +60,9 @@ def get_adsite(atoms, site = None, face='top'):
 
     return info['adatom']
 
+def make_symmetric(theatoms, natoms=3):
+    for i in range(natoms):
+        theatoms = remove_bottom_atom(theatoms) 
 
 def make_adstruc(theatoms, name, theface='top', thesite='top', d=2):
     from ase.io.vasp import write_vasp

@@ -66,7 +66,7 @@ for thisoxidesite in oxidesites:
                     zro2, [0,0,1],layers=4, vacuum=15., termination=oxideterm[thisoxideterm],verbose=True, symmetric=True
                     ) } 
                 }
-    remove_bottom = make_symmetric
+
     for i in range(3):
         ZrO2001[thisoxideterm]['1x1'] = [ remove_bottom_atom( thisoxideslab ) for thisoxideslab in ZrO2001[thisoxideterm]['1x1'] ]
 
