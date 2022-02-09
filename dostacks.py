@@ -1,9 +1,9 @@
 import pdb
 import os, sys, subprocess
-try:
-    sys.path.insert(0,'/data/git/ase/')
-except FileNotFoundError as E:
-    pass
+#try:
+#    sys.path.insert(0,'/backups/data/git/ase/')
+#except FileNotFoundError as E:
+#    pass
 try:
     import ase
 except ModuleNotFoundError as E:
@@ -52,12 +52,12 @@ Zr[thisindex][metalmulti].write(metalfilename, **vaspopts)
 adsites = get_adsite(Zr[thisindex][metalmulti],site='top',face='bottom')
 
 oxideterm = {'Oterm': 'O', 'Zrterm': 'Zr'}
-oxidesites = ['top']#, 'hollow', 'bridge']
+oxidesites = ['top', 'hollow']#, 'bridge']
 thisoxideterm = 'Zrterm'
 
 thisoxidename ='ZrO2001'+thisoxideterm
 
-distances = np.array([2.5, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
+distances = np.array([2.5])#, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
 
 for thisoxidesite in oxidesites:
 
