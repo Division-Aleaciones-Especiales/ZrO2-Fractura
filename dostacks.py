@@ -53,7 +53,7 @@ adsites = get_adsite(Zr[thisindex][metalmulti],site='top',face='bottom')
 
 oxideterm = {'Oterm': 'O', 'Zrterm': 'Zr'}
 oxidesites = ['top']#, 'hollow', 'bridge']
-thisoxideterm = 'Zrterm'
+thisoxideterm = 'Oterm'
 
 thisoxidename ='ZrO2001'+thisoxideterm
 
@@ -78,6 +78,10 @@ for thisoxidesite in oxidesites:
             make_supercell(theoxidesurf,multiplicities['2x2'],tol=1e-10, wrap=True) 
             #for i, theoxidesurf in enumerate(ZrO2001[thisoxideterm]['1x1']) 
             for theoxidesurf in ZrO2001[thisoxideterm]['1x1']
+            ]
+
+    write_2x2_oxide_surfaces = [
+            thisone.write(f'ZrO2001{thisoxideterm}_2x2_{i}.vasp', **vaspopts) for i, thisone in enumerate(ZrO2001[thisoxideterm]['2x2'])
             ]
 
     center = [this.center(axis=2) for this in ZrO2001[thisoxideterm]['2x2']]
