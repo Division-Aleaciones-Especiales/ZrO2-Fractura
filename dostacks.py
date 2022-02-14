@@ -1,16 +1,9 @@
 import pdb
 import os, sys, subprocess
-<<<<<<< HEAD
-#try:
-#    sys.path.insert(0,'/backups/data/git/ase/')
-#except FileNotFoundError as E:
-#    pass
-=======
 try:
     sys.path.insert(0,'/data/git/ase/')
 except FileNotFoundError as E:
     pass
->>>>>>> archivosviejos
 try:
     import ase
 except ModuleNotFoundError as E:
@@ -59,20 +52,12 @@ Zr[thisindex][metalmulti].write(metalfilename, **vaspopts)
 adsites = get_adsite(Zr[thisindex][metalmulti],site='top',face='bottom')
 
 oxideterm = {'Oterm': 'O', 'Zrterm': 'Zr'}
-<<<<<<< HEAD
-oxidesites = ['top', 'hollow']#, 'bridge']
-=======
 oxidesites = ['top']#, 'hollow', 'bridge']
->>>>>>> archivosviejos
-thisoxideterm = 'Zrterm'
+thisoxideterm = 'Oterm'
 
 thisoxidename ='ZrO2001'+thisoxideterm
 
-<<<<<<< HEAD
-distances = np.array([2.5])#, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
-=======
 distances = np.array([2.5, 2.75, 3.0, 3.25, 3.5, 4.0, 5.0, 6.0])
->>>>>>> archivosviejos
 
 for thisoxidesite in oxidesites:
 
@@ -93,6 +78,10 @@ for thisoxidesite in oxidesites:
             make_supercell(theoxidesurf,multiplicities['2x2'],tol=1e-10, wrap=True) 
             #for i, theoxidesurf in enumerate(ZrO2001[thisoxideterm]['1x1']) 
             for theoxidesurf in ZrO2001[thisoxideterm]['1x1']
+            ]
+
+    write_2x2_oxide_surfaces = [
+            thisone.write(f'ZrO2001{thisoxideterm}_2x2_{i}.vasp', **vaspopts) for i, thisone in enumerate(ZrO2001[thisoxideterm]['2x2'])
             ]
 
     center = [this.center(axis=2) for this in ZrO2001[thisoxideterm]['2x2']]
