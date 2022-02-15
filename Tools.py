@@ -127,3 +127,21 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
         return thestack, atoms1, atoms2
     else:
         return thestack
+
+
+# Plotting tools
+import matplotlib.pyplot as plt
+from ase.visualize.plot import plot_atoms
+
+def plotviews(atoms_object,
+              rotation1='-90x',
+              rotation2='-90x, 45y',
+              rotation3='0x'):
+  fig = plt.figure()
+  ax1 = fig.add_axes((0.1,0.1, 0.3,0.8))
+  ax2 = fig.add_axes((0.3,0.1, 0.3,0.8))
+  ax3 = fig.add_axes((0.6,0.1, 0.3,0.8))
+  plot_atoms(atoms_object,rotation=rotation1, ax=ax1)
+  plot_atoms(atoms_object,rotation=rotation2, ax=ax2)
+  plot_atoms(atoms_object,rotation=rotation3,ax=ax3)
+  return ax1, ax2, ax3
