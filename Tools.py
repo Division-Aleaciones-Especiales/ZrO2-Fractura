@@ -30,13 +30,19 @@ def get_bridge_position(atoms, top_layer):
     first_x = atoms.positions[top_layer,0].argsort()
     return  atoms.positions[top_layer[first_x[:2]], :].mean(axis=0)
 
-def get_adsite(atoms, site = None, face='top'):
+def get_hollow_positions(thisatoms, thislayer):
+    return thisatoms.positions[thislayer].mean(axis=0)
+
+def get_adsite(atoms, site = None, face='top', given=None, namegiven = None):
     """ 
     site = ['top', 'hollow', 'bridge']
     face= ['top', 'bottom']
     """
+    from ase.build import sort
+    sort(atoms)
+    atoms.wrap()
     check_has_adatom(atoms)
-    layer, hs = get_layers(atoms, [0, 0, 1])
+    layer, hs = get_layers(atoms, [0, 0, 1], tolerance=1)
     if face == 'top':
         layer = atom_index_in_top(layer)
     elif face == 'bottom':
@@ -48,7 +54,8 @@ def get_adsite(atoms, site = None, face='top'):
         info['adatom'].update({face:{}})
 
     if site == 'hollow':
-        info['adatom'][face].update({'hollow': atoms.positions[layer].mean(axis=0)})
+        #info['adatom'][face].update({'hollow': atoms.positions[layer].mean(axis=0)})
+        info['adatom'][face].update({'hollow': get_hollow_positions(atoms,layer)})
     elif site == 'top':
         info['adatom'][face].update({'top': get_top_positions(atoms, layer)})
     elif site == 'bridge':
