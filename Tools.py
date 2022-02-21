@@ -120,8 +120,8 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
     atoms2.set_cell(cell.copy(), scale_atoms = True)
     atoms2.write('rescaled_atoms2.xyz', format='xyz')
 
-    adsite1 = get_adsite(atoms1, site=tagadsite1, face='top')['top'][tagadsite1]
-    adsite2 = get_adsite(atoms2, site=tagadsite2, face='bottom')['bottom'][tagadsite2]
+    adsite1 = atoms1.info['adatom']['top'][tagadsite1]
+    adsite2 = atoms2.info['adatom']['bottom'][tagadsite2]
 
     translation = adsite1 - adsite2 + d
     print(translation)
