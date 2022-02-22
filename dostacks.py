@@ -101,4 +101,4 @@ for thisoxidesite in oxidesites:
 
     cmd_opts = ' '.join(poscarnames)
 
-    os.popen('vesta '+cmd_opts)
+    #os.popen('vesta '+cmd_opts)
