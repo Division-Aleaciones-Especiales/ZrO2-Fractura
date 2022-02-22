@@ -42,11 +42,10 @@ def get_adsite(atoms, site = None, face='top', given=None, namegiven = None):
     sort(atoms)
     atoms.wrap()
     check_has_adatom(atoms)
-    layer, hs = get_layers(atoms, [0, 0, 1], tolerance=1)
     if face == 'top':
-        layer = atom_index_in_top(layer)
+        layer = atom_index_in_top(atoms)
     elif face == 'bottom':
-        layer = atom_index_in_bottom(layer)
+        layer = atom_index_in_bottom(atoms)
 
     info = atoms.info
 
@@ -94,7 +93,7 @@ def get_scaled_site(thesite, thecell):
 def remove_bottom_atom(theatoms):
     atoms = theatoms.copy()
     layers, hs = get_layers(atoms,(0,0,1))
-    atoms_in_bottom = atom_index_in_bottom(layers)
+    atoms_in_bottom = atom_index_in_bottom(atoms)
     atoms.pop(atoms_in_bottom[-1])
     return atoms
 
