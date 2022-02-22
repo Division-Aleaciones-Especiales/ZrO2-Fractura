@@ -39,10 +39,11 @@ def get_adsite(atoms, site = None, face='top'):
     check_has_adatom(atoms)
     layer, hs = get_layers(atoms, [0, 0, 1])
     if face == 'top':
-        layer = atom_index_in_top(layer)
+        layer = [i for i,h in zip(layer, hs) if h == max(hs)] #atom_index_in_top(layer)
         print(layer)
     elif face == 'bottom':
-        layer = atom_index_in_bottom(layer)
+        layer = [i for i,h in zip(layer, hs) if h == min(hs)] #atom_index_in_top(layer)
+        print(layer)
 
     info = atoms.info
 
