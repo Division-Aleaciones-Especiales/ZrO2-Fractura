@@ -4,6 +4,7 @@ from ase import Atoms
 from ase.geometry import get_layers
 import numpy as np
 import sys
+from ase.visualize import view
 sys.path.insert(0, '/data/git/ase/')
 from ase.build.surfaces_with_termination import atom_index_in_top, atom_index_in_bottom
 from ase.build import sort
@@ -30,21 +31,16 @@ def get_bridge_position(atoms, top_layer):
     first_x = atoms.positions[top_layer,0].argsort()
     return  atoms.positions[top_layer[first_x[:2]], :].mean(axis=0)
 
-def get_hollow_positions(thisatoms, thislayer):
-    return thisatoms.positions[thislayer].mean(axis=0)
-
-def get_adsite(atoms, site = None, face='top', given=None, namegiven = None):
+def get_adsite(atoms, site = None, face='top'):
     """ 
     site = ['top', 'hollow', 'bridge']
     face= ['top', 'bottom']
     """
-    from ase.build import sort
-    sort(atoms)
-    atoms.wrap()
     check_has_adatom(atoms)
-    layer, hs = get_layers(atoms, [0, 0, 1], tolerance=1)
+    layer, hs = get_layers(atoms, [0, 0, 1])
     if face == 'top':
         layer = atom_index_in_top(layer)
+        print(layer)
     elif face == 'bottom':
         layer = atom_index_in_bottom(layer)
 
@@ -54,8 +50,7 @@ def get_adsite(atoms, site = None, face='top', given=None, namegiven = None):
         info['adatom'].update({face:{}})
 
     if site == 'hollow':
-        #info['adatom'][face].update({'hollow': atoms.positions[layer].mean(axis=0)})
-        info['adatom'][face].update({'hollow': get_hollow_positions(atoms,layer)})
+        info['adatom'][face].update({'hollow': atoms.positions[layer].mean(axis=0)})
     elif site == 'top':
         info['adatom'][face].update({'top': get_top_positions(atoms, layer)})
     elif site == 'bridge':
@@ -77,7 +72,6 @@ def make_adstruc(theatoms, name, theface='top', thesite='top', d=2):
     from ase.io.vasp import write_vasp
     if theface == 'bottom':
         d = -d 
-
     ad_pos = [theatoms.info['adatom'][theface][thesite]+[0,0,d]]
     adatom_inface_insite = Atoms('H', positions=ad_pos, pbc=True, cell=theatoms.cell.copy())
     adstruc = theatoms.copy()
@@ -104,14 +98,24 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
     height1 = get_slab_height(in_atoms1)
     height2 = get_slab_height(in_atoms2)
 
+    adsite1 = in_atoms1.info['adatom']['top'][tagadsite1]
+    adsite2 = in_atoms2.info['adatom']['bottom'][tagadsite2]
+
     if cell is None:
         cell = in_atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
 
+    scaledadsite1 = np.multiply(np.divide(adsite1, in_atoms1.cell.lengths()), cell.lengths())
+    scaledadsite2 = np.multiply(np.divide(adsite2, in_atoms2.cell.lengths()), cell.lengths())
+
     atoms1 = sort(in_atoms1.copy())
-    atoms1 = in_atoms1.copy()
     atoms1.cell[2] = cell[2]
     atoms1.center(axis=2)
+
+    atoms1.info['adatom']['top'][tagadsite1]=scaledadsite1
+    adstruc1 = make_adstruc(atoms1, 'atoms1', thesite=tagadsite1)
+    adstruc1.write('adstric1.vasp', **vasp_write_options)
+    view(adstruc1)
 
     atoms2 = sort(in_atoms2.copy())
     atoms2.cell[2] = cell[2].copy()
@@ -120,17 +124,20 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
     atoms2.set_cell(cell.copy(), scale_atoms = True)
     atoms2.write('rescaled_atoms2.xyz', format='xyz')
 
-    adsite1 = atoms1.info['adatom']['top'][tagadsite1]
-    adsite2 = atoms2.info['adatom']['bottom'][tagadsite2]
+    atoms2.info['adatom']['bottom'][tagadsite2]=scaledadsite2
+    adstruc2 = make_adstruc(atoms2, 'atoms2', theface='bottom', thesite=tagadsite2)
+    adstruc2.write('adstruc2.vasp',  **vasp_write_options)
 
-    translation = adsite1 - adsite2 + d
-    print(translation)
+    view(adstruc2)
+
+    translation = scaledadsite1 - scaledadsite2 + d
 
     atoms2.translate(translation)
     atoms2.write('translated_rescaled_atoms2.xyz', format='xyz')
 
     thestack = atoms1.copy()
     thestack.extend(atoms2)
+    view(thestack)
 
     if return_parts:
         return thestack, atoms1, atoms2
