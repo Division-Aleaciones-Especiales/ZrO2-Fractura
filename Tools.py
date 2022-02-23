@@ -7,8 +7,18 @@ import sys
 sys.path.insert(0, '/data/git/ase/')
 from ase.build.surfaces_with_termination import atom_index_in_top, atom_index_in_bottom
 from ase.build import sort
+from ase.geometry import get_layers
 
 vasp_write_options = {'format':'vasp', 'direct':True, 'wrap': True}
+
+def atom_index_in_top(atoms):
+    layer, hs = get_layers(atoms,(0,0,1))
+    return [ atom.index for atom in atoms if abs( atom.z - max(hs) )<1e-10 ]
+
+def atom_index_in_bottom(atoms):
+    layer, hs = get_layers(atoms, (0,0,1))
+    return [ atom.index for atom in atoms if abs( atom.z - min(hs) )<1e-10 ]
+
 def check_has_adatom(theatoms):
     if hasattr(theatoms, 'info'):
         if isinstance(theatoms.info, dict):
