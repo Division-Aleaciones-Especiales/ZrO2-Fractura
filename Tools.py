@@ -96,7 +96,7 @@ def make_adstruc(theatoms, name, theface='top', thesite='top', d=2):
     return adstruc
 
 def get_slab_height(theatoms):
-    return theatoms.positions[:,2].max() - theatoms.positions[:,2].min()
+    return theatoms.positions.max(axis=0)[-1] - theatoms.positions.min(axis=0)[-1]
 
 def get_scaled_site(thesite, thecell):
     return np.array( [ad / np.linalg.norm(v) for ad, v in zip(thesite, thecell.array)] )
@@ -110,10 +110,11 @@ def remove_bottom_atom(theatoms):
 
 
 def scalecell(atoms, target_cell):
+    thisatoms = atoms.copy()
     auxcell = atoms.cell.copy()
     auxcell[2] = target_cell[2]
-    scaled_atoms = Atoms(atoms.get_chemical_symbols(), scaled_positions = atoms.get_scaled_positions(), cell = auxcell, pbc=False)
-    scaled_atoms.set_cell(target_cell, scale_atoms=True)
+    thisatoms.set_cell(auxcell, scale_atoms=False)
+    scaled_atoms = Atoms(thisatoms.get_chemical_symbols(), scaled_positions = thisatoms.get_scaled_positions(), cell = target_cell, pbc=False)
     return scaled_atoms
 
 def plotcases(listofatoms, listofparams):
@@ -131,11 +132,14 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
         cell = in_atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
 
+    print('total_height ', cell[2])
+
     atoms1 = in_atoms1.copy()
     atoms2 = in_atoms2.copy()
 
     adsite1 = atoms1.info['adatom']['top'][tagadsite1]
     adsite2 = atoms2.info['adatom']['bottom'][tagadsite2]
+
 
     atoms1.translate(-adsite1-np.array([0,0,distance/2]))
     atoms2.translate(-adsite2+np.array([0,0,distance/2]))
@@ -146,7 +150,7 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
     thestack = scaled1.copy()
     thestack.extend(scaled2)
 
-    thestack.translate(np.array([0,0,height1/2]))
+#    thestack.translate(np.array([0,0,height1/2]))
 
     if return_parts:
         return thestack, scaled1, scaled2
