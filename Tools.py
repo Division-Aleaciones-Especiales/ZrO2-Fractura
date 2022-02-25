@@ -146,6 +146,8 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
     thestack = scaled1.copy()
     thestack.extend(scaled2)
 
+    thestack.translate(np.array([0,0,height1/2]))
+
     if return_parts:
         return thestack, scaled1, scaled2
     else:
