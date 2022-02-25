@@ -109,10 +109,10 @@ def remove_bottom_atom(theatoms):
     return atoms
 
 
-def scale_cell(atoms, target_cell):
+def scalecell(atoms, target_cell):
     auxcell = atoms.cell.copy()
     auxcell[2] = target_cell[2]
-    scaled_atoms = Atoms(atoms.get_chemical_symbols(), scaled_positions = atoms.get_scaled_positions(), cell = auxcell)
+    scaled_atoms = Atoms(atoms.get_chemical_symbols(), scaled_positions = atoms.get_scaled_positions(), cell = auxcell, pbc=False)
     scaled_atoms.set_cell(target_cell, scale_atoms=True)
     return scaled_atoms
 
@@ -128,31 +128,20 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
     atoms1 = in_atoms1.copy()
     atoms2 = in_atoms2.copy()
 
-    print(tagadsite1)
-    print(tagadsite2)
-
     adsite1 = atoms1.info['adatom']['top'][tagadsite1]
     adsite2 = atoms2.info['adatom']['bottom'][tagadsite2]
 
     atoms1.translate(-adsite1-np.array([0,0,distance/2]))
     atoms2.translate(-adsite2+np.array([0,0,distance/2]))
 
+    scaled1 = scalecell(atoms1, cell)
+    scaled2 = scalecell(atoms2, cell)
 
-    auxcell = atoms1.cell.copy()
-    auxcell[2] = cell[2]
-    atoms1.set_cell(auxcell, scale_atoms=False)
-
-    
-    auxcell2 = atoms2.cell.copy()
-    auxcell2[2] = cell[2]
-    atoms2.set_cell(auxcell2, scale_atoms=False)  # only change height
-    atoms2 = Atoms( atoms2.get_chemical_symbols(), scaled_positions =atoms2.get_scaled_positions(), cell=cell, pbc = False)
-
-    thestack = atoms1.copy()
-    thestack.extend(atoms2)
+    thestack = scaled1.copy()
+    thestack.extend(scaled2)
 
     if return_parts:
-        return thestack, atoms1, atoms2
+        return thestack, scaled1, scaled2
     else:
         return thestack
 
