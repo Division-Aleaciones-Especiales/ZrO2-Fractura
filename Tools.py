@@ -1,14 +1,25 @@
+import sys
+sys.path.insert(0, '/data/git/ase/')
 import pdb
 import os
 from ase import Atoms
 from ase.geometry import get_layers
 import numpy as np
 import sys
-sys.path.insert(0, '/data/git/ase/')
 from ase.build.surfaces_with_termination import atom_index_in_top, atom_index_in_bottom
 from ase.build import sort
+from ase.geometry import get_layers
 
 vasp_write_options = {'format':'vasp', 'direct':True, 'wrap': True}
+
+def atom_index_in_top(atoms):
+    layer, hs = get_layers(atoms,(0,0,1))
+    return [ atom.index for atom in atoms if abs( atom.z - max(hs) )<1e-10 ]
+
+def atom_index_in_bottom(atoms):
+    layer, hs = get_layers(atoms, (0,0,1))
+    return [ atom.index for atom in atoms if abs( atom.z - min(hs) )<1e-10 ]
+
 def check_has_adatom(theatoms):
     if hasattr(theatoms, 'info'):
         if isinstance(theatoms.info, dict):
@@ -42,11 +53,10 @@ def get_adsite(atoms, site = None, face='top', given=None, namegiven = None):
     sort(atoms)
     atoms.wrap()
     check_has_adatom(atoms)
-    layer, hs = get_layers(atoms, [0, 0, 1], tolerance=1)
     if face == 'top':
-        layer = atom_index_in_top(layer)
+        layer = atom_index_in_top(atoms)
     elif face == 'bottom':
-        layer = atom_index_in_bottom(layer)
+        layer = atom_index_in_bottom(atoms)
 
     info = atoms.info
 
@@ -94,13 +104,26 @@ def get_scaled_site(thesite, thecell):
 def remove_bottom_atom(theatoms):
     atoms = theatoms.copy()
     layers, hs = get_layers(atoms,(0,0,1))
-    atoms_in_bottom = atom_index_in_bottom(layers)
+    atoms_in_bottom = atom_index_in_bottom(atoms)
     atoms.pop(atoms_in_bottom[-1])
     return atoms
 
+
+def scalecell(atoms, target_cell):
+    auxcell = atoms.cell.copy()
+    auxcell[2] = target_cell[2]
+    scaled_atoms = Atoms(atoms.get_chemical_symbols(), scaled_positions = atoms.get_scaled_positions(), cell = auxcell, pbc=False)
+    scaled_atoms.set_cell(target_cell, scale_atoms=True)
+    return scaled_atoms
+
+def plotcases(listofatoms, listofparams):
+    fig, ax = plt.subplots(2, len(listofparams))
+    [plot_atoms(thiscase, ax=thisax) for thiscase,thisax  in zip(listofatoms,ax[0,:])]
+    [thisax.set_title(f'{ang}') for thisax, ang in zip(ax[0,:], listofparams)]
+    [plot_atoms(thiscase, ax=thisax, rotation='90x') for thiscase,thisax  in zip(listofatoms,ax[1,:])]
+
 def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell = None, return_parts=False):
     d = np.array([0,0,distance])
-
     height1 = get_slab_height(in_atoms1)
     height2 = get_slab_height(in_atoms2)
 
@@ -108,32 +131,25 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
         cell = in_atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
 
-    atoms1 = sort(in_atoms1.copy())
     atoms1 = in_atoms1.copy()
-    atoms1.cell[2] = cell[2]
-    atoms1.center(axis=2)
+    atoms2 = in_atoms2.copy()
 
-    atoms2 = sort(in_atoms2.copy())
-    atoms2.cell[2] = cell[2].copy()
-    atoms2.write('atoms2.xyz', format='xyz')
-    atoms2.set_cell(np.eye(3), scale_atoms = True)
-    atoms2.set_cell(cell.copy(), scale_atoms = True)
-    atoms2.write('rescaled_atoms2.xyz', format='xyz')
+    adsite1 = atoms1.info['adatom']['top'][tagadsite1]
+    adsite2 = atoms2.info['adatom']['bottom'][tagadsite2]
 
-    adsite1 = get_adsite(atoms1, site=tagadsite1, face='top')['top'][tagadsite1]
-    adsite2 = get_adsite(atoms2, site=tagadsite2, face='bottom')['bottom'][tagadsite2]
+    atoms1.translate(-adsite1-np.array([0,0,distance/2]))
+    atoms2.translate(-adsite2+np.array([0,0,distance/2]))
 
-    translation = adsite1 - adsite2 + d
-    print(translation)
+    scaled1 = scalecell(atoms1, cell)
+    scaled2 = scalecell(atoms2, cell)
 
-    atoms2.translate(translation)
-    atoms2.write('translated_rescaled_atoms2.xyz', format='xyz')
+    thestack = scaled1.copy()
+    thestack.extend(scaled2)
 
-    thestack = atoms1.copy()
-    thestack.extend(atoms2)
+    thestack.translate(np.array([0,0,height1/2]))
 
     if return_parts:
-        return thestack, atoms1, atoms2
+        return thestack, scaled1, scaled2
     else:
         return thestack
 
