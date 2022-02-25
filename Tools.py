@@ -116,6 +116,12 @@ def scalecell(atoms, target_cell):
     scaled_atoms.set_cell(target_cell, scale_atoms=True)
     return scaled_atoms
 
+def plotcases(listofatoms, listofparams):
+    fig, ax = plt.subplots(2, len(listofparams))
+    [plot_atoms(thiscase, ax=thisax) for thiscase,thisax  in zip(listofatoms,ax[0,:])]
+    [thisax.set_title(f'{ang}') for thisax, ang in zip(ax[0,:], listofparams)]
+    [plot_atoms(thiscase, ax=thisax, rotation='90x') for thiscase,thisax  in zip(listofatoms,ax[1,:])]
+
 def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell = None, return_parts=False):
     d = np.array([0,0,distance])
     height1 = get_slab_height(in_atoms1)
