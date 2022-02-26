@@ -132,8 +132,6 @@ def stack(in_atoms1, in_atoms2, tagadsite1, tagadsite2, distance, mix=0.5, cell 
         cell = in_atoms1.cell.copy() # + mix*(atoms2.cell.copy() - atoms1.cell.copy())
     cell[2] = np.array([0,0,height1+height2+2*distance])
 
-    print('total_height ', cell[2])
-
     atoms1 = in_atoms1.copy()
     atoms2 = in_atoms2.copy()
 
